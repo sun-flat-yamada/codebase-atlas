@@ -256,6 +256,33 @@ class FinishTest(unittest.TestCase):
             self.assertEqual(am.cmd_finish(args), 1)
 
 
+class DeleteBranchTest(unittest.TestCase):
+    def test_already_deleted_is_not_a_failure(self):
+        """マージ時の自動削除で消えたブランチは「削除済み」（手動削除を求める警告を出さない）。"""
+
+        def api(method, route, fields=None):
+            raise am.GhError("HTTP 404: Not Found")
+
+        with mock.patch.object(am, "gh_api", api), mock.patch.object(am.subprocess, "run") as run:
+            self.assertEqual(am.delete_merged_branch("o/r", "fix/1-x", "main"), "already-deleted")
+        run.assert_not_called()
+
+    def test_existing_branch_is_deleted(self):
+        calls = []
+
+        def api(method, route, fields=None):
+            calls.append((method, route))
+            return {}
+
+        with (
+            mock.patch.object(am, "gh_api", api),
+            mock.patch.object(am.subprocess, "run", return_value=mock.Mock(returncode=0)) as run,
+        ):
+            self.assertEqual(am.delete_merged_branch("o/r", "fix/1-x", "main"), "deleted")
+        run.assert_called_once()
+        self.assertEqual(am.delete_merged_branch("o/r", "main", "main"), "skipped")
+
+
 class BranchNameTest(unittest.TestCase):
     def test_valid_and_exempt(self):
         for name in ("feat/42-graphify-edge-gate", "docs/readme-badges", "fix/7-x"):

@@ -407,9 +407,20 @@ def approve(repo: str, pr: int, sha: str) -> str:
         raise
 
 
+def remote_branch_exists(repo: str, branch: str) -> bool:
+    try:
+        gh_api("GET", f"repos/{repo}/git/ref/heads/{branch}")
+        return True
+    except GhError:
+        return False
+
+
 def delete_merged_branch(repo: str, head_ref: str, base_ref: str) -> str:
     if not head_ref or head_ref == base_ref or head_ref == "main":
         return "skipped"
+    # "Automatically delete head branches" may already have removed it: that is success, not a failure to report
+    if not remote_branch_exists(repo, head_ref):
+        return "already-deleted"
     r = subprocess.run(["git", "push", "origin", "--delete", head_ref], cwd=REPO_ROOT, capture_output=True)
     if r.returncode == 0:
         return "deleted"
@@ -515,6 +526,8 @@ def cmd_finish(args: argparse.Namespace, sleep: Callable[[float], None] = time.s
         print(f"⚠️  could not delete remote branch {pull.head_ref}: delete it manually.", file=sys.stderr)
     elif deleted == "deleted":
         print(f"🧹 deleted remote branch {pull.head_ref}")
+    elif deleted == "already-deleted":
+        print(f"🧹 remote branch {pull.head_ref} was already deleted by GitHub")
     return 0
 
 
