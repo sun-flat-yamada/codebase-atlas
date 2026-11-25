@@ -1,0 +1,20 @@
+# --- 環境個別ファイル（リポジトリに含めない）---
+.vscode/
+.idea/
+.DS_Store
+*.log
+*~
+
+# --- 作業用一時フォルダ（CLAUDE.md の一時ファイル規約）---
+.tmp/
+# --- 作業用の一時ファイル（ローカルでの確認用。リポジトリに含めない）---
+tmp/
+
+# --- codebase-atlas ---
+# 手元の設定の上書き（.env.example を写して使う。scripts/automerge.py が読む）
+.env
+# Python
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.venv/

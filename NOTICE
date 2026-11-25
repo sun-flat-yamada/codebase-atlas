@@ -1,0 +1,17 @@
+codebase-atlas
+https://github.com/sun-flat-yamada/codebase-atlas
+
+This project is derived from reverse-spec-flow:
+  https://github.com/sun-flat-yamada/reverse-spec-flow
+  which is a fork of https://github.com/aws-samples/sample-reverse-spec-flow
+  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+  Licensed under the MIT No Attribution License (MIT-0). See LICENSE.
+
+codebase-atlas uses graphify as an external tool:
+  https://github.com/sun-flat-yamada/graphify
+  (a fork of https://github.com/Graphify-Labs/graphify)
+  Licensed under the Apache License, Version 2.0.
+  graphify is installed separately by the user; no graphify source code is
+  redistributed in this repository. tests/fixtures/graphify-out/graph.json is
+  output that graphify produced from the synthetic sample in
+  tests/fixtures/sample-java/.

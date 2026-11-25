@@ -1,0 +1,62 @@
+name: 🐛 Bug Report
+description: Report a problem with init.sh, gates.sh, atlas_graph.py or the procedure
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please check existing issues before submitting.
+        **Do not paste proprietary source code, customer names, or secrets.** A minimal, anonymized reproduction is far more useful than a copy of a real project.
+  - type: input
+    id: version
+    attributes:
+      label: Version / Commit SHA
+      description: The codebase-atlas tag or commit (see `spec-extraction/docs/knowledge/FRAMEWORK-VERSION` of the generated repository).
+      placeholder: "e.g., v0.1.0 or abc1234"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS (macOS / Linux / Windows with WSL or Git Bash), `bash --version`, `python3 --version`, `graphify --version`, the AI coding tool and its version, the Playbook and `purpose` you used.
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      value: |
+        1. Run `./init.sh ...`
+        2. Run `bash spec-extraction/03-audit/gates.sh ...`
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output and exit code
+      description: The full output of the failing command (`gates.sh`, `selftest.sh`, `atlas_graph.py`) and its exit code. Redact paths and names that identify your organization.
+      render: shell
+  - type: checkboxes
+    id: checklists
+    attributes:
+      label: Checklist
+      options:
+        - label: I have verified that no secrets, proprietary code or customer identifiers are included.
+          required: true
+        - label: I have searched the existing issues to ensure this is not a duplicate.
+          required: true

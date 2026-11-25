@@ -1,0 +1,12 @@
+# Python tooling (tools/, scripts/, tests/) — standard library only, Python 3.9+
+target-version = "py39"
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+  "UP007", # keep `X | None` readable under `from __future__ import annotations` (already used)
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["E402"]

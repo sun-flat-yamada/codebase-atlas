@@ -1,0 +1,27 @@
+name: Branch Name Check
+
+# Pull request branches are named after the change: <type>/<issue>-<slug> (docs/development-workflow.md).
+# Fails a pull request whose head branch keeps a name that does not describe the change,
+# such as the Claude Code cloud session default `claude/<adjective>-<name>-<id>`.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  branch-name:
+    name: Head branch follows <type>/<issue>-<slug>
+    # Fork PRs and Dependabot keep their own naming.
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Validate head branch name
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: python scripts/automerge.py branch check "$HEAD_REF"

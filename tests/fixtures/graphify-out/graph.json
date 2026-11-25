@@ -1,0 +1,349 @@
+{
+ "directed": false,
+ "multigraph": false,
+ "graph": {
+  "schema_version": 1,
+  "graphify_version": "0.9.119"
+ },
+ "nodes": [
+  {
+   "id": "src_main_java_shop_repo_orderrepository_orderrepository",
+   "label": "OrderRepository",
+   "_callable": true,
+   "_callable_class": true,
+   "_java_type": {
+    "path": "OrderRepository",
+    "package": "shop.repo",
+    "imports": [
+     "java.util.ArrayList",
+     "java.util.List"
+    ]
+   },
+   "_origin": "ast",
+   "community": 3,
+   "community_name": "OrderRepository",
+   "file_type": "code",
+   "metadata": {
+    "type_path": "OrderRepository"
+   },
+   "norm_label": "orderrepository",
+   "source_file": "src/main/java/shop/repo/OrderRepository.java",
+   "source_location": "L7"
+  },
+  {
+   "id": "src_main_java_shop_service_orderservice_orderservice",
+   "label": "OrderService",
+   "_callable": true,
+   "_callable_class": true,
+   "_java_type": {
+    "path": "OrderService",
+    "package": "shop.service",
+    "imports": [
+     "shop.repo.OrderRepository"
+    ]
+   },
+   "_origin": "ast",
+   "community": 2,
+   "community_name": "OrderService",
+   "file_type": "code",
+   "metadata": {
+    "type_path": "OrderService"
+   },
+   "norm_label": "orderservice",
+   "source_file": "src/main/java/shop/service/OrderService.java",
+   "source_location": "L6"
+  },
+  {
+   "id": "src_main_java_shop_web_ordercontroller_ordercontroller",
+   "label": "OrderController",
+   "_callable": true,
+   "_callable_class": true,
+   "_java_type": {
+    "path": "OrderController",
+    "package": "shop.web",
+    "imports": [
+     "shop.service.OrderService"
+    ]
+   },
+   "_origin": "ast",
+   "community": 2,
+   "community_name": "OrderService",
+   "file_type": "code",
+   "metadata": {
+    "type_path": "OrderController"
+   },
+   "norm_label": "ordercontroller",
+   "source_file": "src/main/java/shop/web/OrderController.java",
+   "source_location": "L6"
+  },
+  {
+   "id": "src_main_java_shop_repo_orderrepository_orderrepository_save",
+   "label": ".save()",
+   "_callable": true,
+   "_origin": "ast",
+   "community": 1,
+   "community_name": ".place",
+   "file_type": "code",
+   "metadata": {
+    "arity": 1,
+    "signature": "String"
+   },
+   "norm_label": ".save()",
+   "source_file": "src/main/java/shop/repo/OrderRepository.java",
+   "source_location": "L10"
+  },
+  {
+   "id": "src_main_java_shop_service_orderservice_orderservice_place",
+   "label": ".place()",
+   "_callable": true,
+   "_origin": "ast",
+   "community": 1,
+   "community_name": ".place",
+   "file_type": "code",
+   "metadata": {
+    "arity": 1,
+    "signature": "String"
+   },
+   "norm_label": ".place()",
+   "source_file": "src/main/java/shop/service/OrderService.java",
+   "source_location": "L9"
+  },
+  {
+   "id": "src_main_java_shop_web_ordercontroller_ordercontroller_placeorder",
+   "label": ".placeOrder()",
+   "_callable": true,
+   "_origin": "ast",
+   "community": 1,
+   "community_name": ".place",
+   "file_type": "code",
+   "metadata": {
+    "arity": 1,
+    "signature": "String"
+   },
+   "norm_label": ".placeorder()",
+   "source_file": "src/main/java/shop/web/OrderController.java",
+   "source_location": "L9"
+  },
+  {
+   "id": "src_main_java_shop_repo_orderrepository",
+   "label": "OrderRepository.java",
+   "_origin": "ast",
+   "community": 0,
+   "community_name": "OrderRepository.java",
+   "file_type": "code",
+   "norm_label": "orderrepository.java",
+   "source_file": "src/main/java/shop/repo/OrderRepository.java",
+   "source_location": "L1"
+  },
+  {
+   "id": "src_main_java_shop_web_ordercontroller",
+   "label": "OrderController.java",
+   "_origin": "ast",
+   "community": 2,
+   "community_name": "OrderService",
+   "file_type": "code",
+   "norm_label": "ordercontroller.java",
+   "source_file": "src/main/java/shop/web/OrderController.java",
+   "source_location": "L1"
+  },
+  {
+   "id": "src_main_java_shop_service_orderservice",
+   "label": "OrderService.java",
+   "_origin": "ast",
+   "community": 3,
+   "community_name": "OrderRepository",
+   "file_type": "code",
+   "norm_label": "orderservice.java",
+   "source_file": "src/main/java/shop/service/OrderService.java",
+   "source_location": "L1"
+  },
+  {
+   "id": "arraylist",
+   "label": "arraylist",
+   "community": 0,
+   "community_name": "OrderRepository.java",
+   "external": true,
+   "file_type": "concept",
+   "norm_label": "arraylist",
+   "source_file": "",
+   "type": "external"
+  },
+  {
+   "id": "list",
+   "label": "list",
+   "community": 0,
+   "community_name": "OrderRepository.java",
+   "external": true,
+   "file_type": "concept",
+   "norm_label": "list",
+   "source_file": "",
+   "type": "external"
+  }
+ ],
+ "links": [
+  {
+   "source": "src_main_java_shop_service_orderservice_orderservice",
+   "target": "src_main_java_shop_repo_orderrepository_orderrepository",
+   "relation": "references",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "context": "field",
+   "source_file": "src/main/java/shop/service/OrderService.java",
+   "source_location": "L7",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_web_ordercontroller_ordercontroller",
+   "target": "src_main_java_shop_service_orderservice_orderservice",
+   "relation": "references",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "context": "field",
+   "source_file": "src/main/java/shop/web/OrderController.java",
+   "source_location": "L7",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_repo_orderrepository",
+   "target": "arraylist",
+   "relation": "imports",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "context": "import",
+   "source_file": "src/main/java/shop/repo/OrderRepository.java",
+   "source_location": "L3",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_repo_orderrepository",
+   "target": "list",
+   "relation": "imports",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "context": "import",
+   "source_file": "src/main/java/shop/repo/OrderRepository.java",
+   "source_location": "L4",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_service_orderservice",
+   "target": "src_main_java_shop_repo_orderrepository_orderrepository",
+   "relation": "imports",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "context": "import",
+   "source_file": "src/main/java/shop/service/OrderService.java",
+   "source_location": "L3",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_web_ordercontroller",
+   "target": "src_main_java_shop_service_orderservice_orderservice",
+   "relation": "imports",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "context": "import",
+   "source_file": "src/main/java/shop/web/OrderController.java",
+   "source_location": "L3",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_repo_orderrepository",
+   "target": "src_main_java_shop_repo_orderrepository_orderrepository",
+   "relation": "contains",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "source_file": "src/main/java/shop/repo/OrderRepository.java",
+   "source_location": "L7",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_service_orderservice",
+   "target": "src_main_java_shop_service_orderservice_orderservice",
+   "relation": "contains",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "source_file": "src/main/java/shop/service/OrderService.java",
+   "source_location": "L6",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_web_ordercontroller",
+   "target": "src_main_java_shop_web_ordercontroller_ordercontroller",
+   "relation": "contains",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "source_file": "src/main/java/shop/web/OrderController.java",
+   "source_location": "L6",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_repo_orderrepository_orderrepository",
+   "target": "src_main_java_shop_repo_orderrepository_orderrepository_save",
+   "relation": "method",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "source_file": "src/main/java/shop/repo/OrderRepository.java",
+   "source_location": "L10",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_service_orderservice_orderservice",
+   "target": "src_main_java_shop_service_orderservice_orderservice_place",
+   "relation": "method",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "source_file": "src/main/java/shop/service/OrderService.java",
+   "source_location": "L9",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_web_ordercontroller_ordercontroller",
+   "target": "src_main_java_shop_web_ordercontroller_ordercontroller_placeorder",
+   "relation": "method",
+   "_origin": "ast",
+   "confidence": "EXTRACTED",
+   "confidence_score": 1.0,
+   "source_file": "src/main/java/shop/web/OrderController.java",
+   "source_location": "L9",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_service_orderservice_orderservice_place",
+   "target": "src_main_java_shop_repo_orderrepository_orderrepository_save",
+   "relation": "calls",
+   "_origin": "ast",
+   "confidence": "INFERRED",
+   "confidence_score": 0.85,
+   "context": "call",
+   "source_file": "src/main/java/shop/service/OrderService.java",
+   "source_location": "L13",
+   "weight": 1.0
+  },
+  {
+   "source": "src_main_java_shop_web_ordercontroller_ordercontroller_placeorder",
+   "target": "src_main_java_shop_service_orderservice_orderservice_place",
+   "relation": "calls",
+   "_origin": "ast",
+   "confidence": "INFERRED",
+   "confidence_score": 0.85,
+   "context": "call",
+   "source_file": "src/main/java/shop/web/OrderController.java",
+   "source_location": "L10",
+   "weight": 1.0
+  }
+ ],
+ "hyperedges": [],
+ "built_at_commit": "1454b8a1998d73db159958ec658c395dbe4c87a0"
+}
