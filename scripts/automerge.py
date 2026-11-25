@@ -428,7 +428,8 @@ def delete_merged_branch(repo: str, head_ref: str, base_ref: str) -> str:
         gh_api("DELETE", f"repos/{repo}/git/refs/heads/{head_ref}")
         return "deleted"
     except GhError:
-        return "failed"
+        # GitHub's automatic deletion runs right after the merge and can win the race against us
+        return "failed" if remote_branch_exists(repo, head_ref) else "already-deleted"
 
 
 # ---------------------------------------------------------------------------
