@@ -267,6 +267,36 @@ class DeleteBranchTest(unittest.TestCase):
             self.assertEqual(am.delete_merged_branch("o/r", "fix/1-x", "main"), "already-deleted")
         run.assert_not_called()
 
+    def test_race_with_automatic_deletion(self):
+        """存在確認の後・削除の前に GitHub の自動削除が先に消した場合も「削除済み」。"""
+        state = {"exists": True}
+
+        def api(method, route, fields=None):
+            if method == "GET":
+                if state["exists"]:
+                    return {}
+                raise am.GhError("HTTP 404: Not Found")
+            raise am.GhError("HTTP 422: Reference does not exist")
+
+        def push(*args, **kwargs):
+            state["exists"] = False  # git push の最中に GitHub が消した
+            return mock.Mock(returncode=1)
+
+        with mock.patch.object(am, "gh_api", api), mock.patch.object(am.subprocess, "run", push):
+            self.assertEqual(am.delete_merged_branch("o/r", "fix/1-x", "main"), "already-deleted")
+
+    def test_real_failure_is_reported(self):
+        def api(method, route, fields=None):
+            if method == "GET":
+                return {}  # まだ存在する
+            raise am.GhError("HTTP 403: Forbidden")
+
+        with (
+            mock.patch.object(am, "gh_api", api),
+            mock.patch.object(am.subprocess, "run", return_value=mock.Mock(returncode=1)),
+        ):
+            self.assertEqual(am.delete_merged_branch("o/r", "fix/1-x", "main"), "failed")
+
     def test_existing_branch_is_deleted(self):
         calls = []
 
