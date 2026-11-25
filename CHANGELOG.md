@@ -17,6 +17,8 @@ Changes inherited from reverse-spec-flow are recorded in [docs/release-notes.md]
   that is not a git repository.
 - graphify is pinned to the tested commit (`GRAPHIFY_TESTED_REF`) in CI and in the install instructions, and
   `atlas_graph.py` warns about an unknown `graph.json` schema version.
+- `automerge.py finish` reports a head branch that GitHub already deleted on merge ("Automatically delete head
+  branches") as deleted instead of asking for a manual deletion.
 - Generated repositories record `framework=codebase-atlas` (and `based_on=reverse-spec-flow 2.2.1`) in
   `FRAMEWORK-VERSION`.
 
