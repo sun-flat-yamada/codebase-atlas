@@ -76,8 +76,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Install graphify (fork)
-        run: python -m pip install --quiet "git+https://github.com/sun-flat-yamada/graphify"
+      - name: Install graphify (fork, pinned to the tested commit = GRAPHIFY_TESTED_REF in tools/atlas_graph.py)
+        run: |
+          ref=$(python -c "import sys; sys.path.insert(0, 'tools'); import atlas_graph; print(atlas_graph.GRAPHIFY_TESTED_REF)")
+          python -m pip install --quiet "git+https://github.com/sun-flat-yamada/graphify@${ref}"
       - name: Configure git identity
         run: |
           git config --global user.name "codebase-atlas-ci"

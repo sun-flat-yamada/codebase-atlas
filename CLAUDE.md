@@ -13,7 +13,8 @@ reverse-spec-flow v2.2.1 を基に、**コードベースの解析手段とし�
   Python は `tools/atlas_graph.py`（graphify との突き合わせ）と `scripts/automerge.py`（Auto-Pilot）に限る。
   テストは `selftest.sh`（フレームワーク全体）と `python3 -m unittest discover -s tests`（Python 部分）。
 - このリポジトリは GitHub で管理する（`sun-flat-yamada/codebase-atlas`）。`init.sh` は**別の**新規リポジトリ（仕様リポジトリ）を作る。
-- **graphify は外部の道具**（`uv tool install git+https://github.com/sun-flat-yamada/graphify`）。同梱しない。
+- **graphify は外部の道具**（`uv tool install git+https://github.com/sun-flat-yamada/graphify@<GRAPHIFY_TESTED_REF>`）。同梱しない。
+  検証済みのコミットは `tools/atlas_graph.py` の `GRAPHIFY_TESTED_REF` が正本で、CI もそれを入れる。上げるときは結合テストを通してから。
   `gates.sh` は graphify を呼ばず、`atlas_graph.py` で `graph.json` と `code-graph.md` を突き合わせるだけ。
 - **プラットフォーム基盤（グラフ DB・ベクター DB・エンベディング）は持たない・要求しない。**「コードグラフ」は
   物理 DB でなく AI が書く Markdown の構造マップ、コード探索はホスト AI ツールに委譲する。基盤が要るのは

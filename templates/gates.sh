@@ -1124,7 +1124,7 @@ gate_graphify() {
   [ -f "$tool" ] || { report FAIL G-GRAPHIFY "spec-extraction/tools/atlas_graph.py が無い（codebase-atlas の init.sh から配置し直す）"; graphify_edge_skip; return; }
   py=$(graphify_python) || { report INCOMPLETE G-GRAPHIFY "Python 3.10 以上が見つからない（python3 / python）。突き合わせを実行できない"; graphify_edge_skip; return; }
   if [ ! -f "$graph" ]; then
-    report INCOMPLETE G-GRAPHIFY "graphify のグラフが無い。作る: ${py} spec-extraction/tools/atlas_graph.py build --source \"\${SOURCE_PATH}\" --out spec-extraction/01-code-graph/graphify（使わないなら gate-config.env を CODE_GRAPH_TOOL=none にして ADR を書く）"
+    report INCOMPLETE G-GRAPHIFY "graphify のグラフが無い。作る: ${py} spec-extraction/tools/atlas_graph.py build（使わないなら gate-config.env を CODE_GRAPH_TOOL=none にして ADR を書く）"
     graphify_edge_skip; return
   fi
   # 断面: グラフを作ったコミットが scope.md の断面と一致すること（ずれると数えた対象が違う）

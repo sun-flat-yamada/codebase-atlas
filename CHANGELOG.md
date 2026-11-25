@@ -4,6 +4,22 @@ All notable changes to codebase-atlas are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 Changes inherited from reverse-spec-flow are recorded in [docs/release-notes.md](docs/release-notes.md).
 
+## [Unreleased]
+
+### Fixed
+
+- `automerge.py finish` no longer treats "no check run yet" as passed, updates a branch that is behind `main`
+  (required by the strict branch protection) before waiting for CI again, and stops on requested changes or
+  unresolved review threads, as `docs/development-workflow.md` already stated. The whole flow is now unit-tested.
+- `atlas_graph.py build` reads `SOURCE_PATH` / `SOURCE_EXCLUDE` from `gate-config.env` and writes to
+  `01-code-graph/graphify` by default, so the graph is built with the same exclusions as `G-GRAPHIFY`; it converts
+  Git Bash paths (`/c/...`), keeps `GRAPHIFY_CMD` paths with spaces intact, and also detects changes to a target
+  that is not a git repository.
+- graphify is pinned to the tested commit (`GRAPHIFY_TESTED_REF`) in CI and in the install instructions, and
+  `atlas_graph.py` warns about an unknown `graph.json` schema version.
+- Generated repositories record `framework=codebase-atlas` (and `based_on=reverse-spec-flow 2.2.1`) in
+  `FRAMEWORK-VERSION`.
+
 ## [0.1.0] - 2026-11-25
 
 First release, based on reverse-spec-flow 2.2.1.

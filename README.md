@@ -82,7 +82,7 @@ Below, products such as Claude Code and Kiro are called **AI tools**, and the AI
 - **An AI tool** (see "Supported AI tools" below)
 - **The source code you want to analyze**
 - **Python 3.10+** for the graphify cross-check, and **[graphify](https://github.com/sun-flat-yamada/graphify)** (Python 3.11.5+) to build the graph:
-  `uv tool install git+https://github.com/sun-flat-yamada/graphify` (or `pipx install git+https://github.com/sun-flat-yamada/graphify`).
+  `uv tool install git+https://github.com/sun-flat-yamada/graphify@14f35e381cab8d0ae10824a336114a907c288146` (or `pipx install git+https://github.com/sun-flat-yamada/graphify@14f35e381cab8d0ae10824a336114a907c288146`; the commit is the one CI tests, `GRAPHIFY_TESTED_REF` in `tools/atlas_graph.py`).
   Without them, pass `--code-graph-tool none` to `init.sh`.
 
 No database or dedicated platform is needed. graphify writes a single `graph.json` file; it runs no service.
@@ -101,9 +101,10 @@ git clone https://github.com/sun-flat-yamada/codebase-atlas.git
 #    If there is a Playbook (a set of counting rules; see "Playbooks" below) for the target technology, you can specify it (optional; it works without one)
 ./codebase-atlas/init.sh ./legacy-order-system order-system rebuild --playbook java-jaxrs-jpa
 
-# 3. Build the graphify code graph into the spec repository (before Phase 1; the agent can also run it)
+# 3. Build the graphify code graph into the spec repository (before Phase 1; the agent can also run it).
+#    The target and the exclusions are read from spec-extraction/00-ingestion/gate-config.env
 cd legacy-order-system-spec
-python3 spec-extraction/tools/atlas_graph.py build --source ../legacy-order-system --out spec-extraction/01-code-graph/graphify
+python3 spec-extraction/tools/atlas_graph.py build
 ```
 
 This creates `legacy-order-system-spec/` (the repository for the specifications) next to the target.

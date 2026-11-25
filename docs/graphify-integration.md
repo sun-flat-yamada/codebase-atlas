@@ -35,10 +35,14 @@ graphify が対応していない言語・設定・文書のファイル（例: 
 
 ```bash
 # graphify（Python 3.11.5 以上）
-uv tool install git+https://github.com/sun-flat-yamada/graphify
-# または: pipx install git+https://github.com/sun-flat-yamada/graphify
+uv tool install git+https://github.com/sun-flat-yamada/graphify@14f35e381cab8d0ae10824a336114a907c288146
+# または: pipx install git+https://github.com/sun-flat-yamada/graphify@14f35e381cab8d0ae10824a336114a907c288146
 graphify --version
 ```
+
+インストールするコミットは、CI で検証しているもの（`tools/atlas_graph.py` の `GRAPHIFY_TESTED_REF`）に固定してください。
+graphify の版が変わると数え方が変わり、同じ断面でも分母が変わりえます（`build-info.json` に使った版が残ります。
+`graph.json` の形式の版が想定と違えば `atlas_graph.py` が警告します）。
 
 突き合わせ（`gates.sh` が呼ぶ `atlas_graph.py`）は Python 3.10 以上の標準ライブラリだけで動きます。
 graphify が要るのはグラフを作る `build` だけです。
@@ -51,10 +55,9 @@ graphify が要るのはグラフを作る `build` だけです。
 
 # 2. 断面（scope.md のコミット）を checkout した状態で、graphify でグラフを作る
 cd legacy-order-system-spec
-python3 spec-extraction/tools/atlas_graph.py build \
-  --source ../legacy-order-system \
-  --out spec-extraction/01-code-graph/graphify \
-  --exclude '(^|/)target/'          # gate-config.env の SOURCE_EXCLUDE と同じ値
+#    解析対象（SOURCE_PATH）と除外（SOURCE_EXCLUDE）は gate-config.env から読む。
+#    出力先の既定は spec-extraction/01-code-graph/graphify。--source / --out / --exclude で上書きできる
+python3 spec-extraction/tools/atlas_graph.py build
 
 # 3. inventory.md を 2 つ目の数え方として、code-graph.md のノードを列挙する（AI エージェントの作業）
 
@@ -87,7 +90,7 @@ graphify query "how are orders persisted?" --graph "$G"           # 問いに関
 
 | サブコマンド | 用途 | 終了コード |
 |--------------|------|-----------|
-| `build --source S --out D` | graphify でグラフを作り、`build-info.json` と `inventory.md` を書く | 0 / 2 |
+| `build [--source S] [--out D] [--exclude R]` | graphify でグラフを作り、`build-info.json` と `inventory.md` を書く。既定値は `gate-config.env` の `SOURCE_PATH` / `SOURCE_EXCLUDE` と `01-code-graph/graphify` | 0 / 2 |
 | `inventory --graph G` | `inventory.md` を作り直す（`--depth N` でディレクトリの深さを指定。既定は親ディレクトリ単位） | 0 / 2 |
 | `crosscheck --graph G --code-graph C` | どのノードにも属さないソースファイルを列挙する | 0 = 漏れなし / 1 = 漏れあり / 2 = 入力不備 |
 | `edge-gap --graph G --code-graph C` | エッジレジストリに無いモジュール間依存を列挙する（`--strict` で漏れを exit 1） | 0 / 1 / 2 |
@@ -108,7 +111,8 @@ graphify query "how are orders persisted?" --graph "$G"           # 問いに関
 | `G-GRAPHIFY` が INCOMPLETE「グラフが無い」 | 上の `build` を実行する。graphify を使えない環境なら `gate-config.env` を `CODE_GRAPH_TOOL=none` にして ADR に理由を書く |
 | `G-GRAPHIFY` が FAIL「UNCOVERED …」 | 示されたファイルを受け持つノードを足す。対象外なら `SOURCE_EXCLUDE` に加えて ADR を書き、`build` をやり直す |
 | `G-GRAPHIFY` が FAIL「断面が違う」 | `scope.md` の断面を checkout してから `build` をやり直す |
-| 生成物（`target/` など）が大量に UNCOVERED になる | `SOURCE_EXCLUDE` を設定し、`build --exclude` にも同じ値を渡す（graphify は `.gitignore` も尊重します） |
+| 生成物（`target/` など）が大量に UNCOVERED になる | `gate-config.env` の `SOURCE_EXCLUDE` を設定して `build` をやり直す（`build` も同じ値を使います。graphify は `.gitignore` も尊重します） |
 | `G-GRAPHIFY-EDGE` の WARN が多い | graphify の推定（`INFERRED`）を含みます。原典で確かめて記録するか、記録しない理由を残してください |
 | Windows で `python3` が見つからない | `gates.sh` は `python3` → `python` の順に探します。`build` は `python` で実行して構いません |
-| Git Bash で `--source /tmp/...` が開けない | Windows の Python は MSYS のパスを解決できません。`cygpath -w` で Windows 形式にして渡してください |
+| Git Bash で解析対象が開けない | `/c/Users/...` 形式は `build` が `C:/Users/...` に直します。`/tmp/...` のようなドライブ文字の無い MSYS のパスは Windows の Python から開けないので、`cygpath -w` で Windows 形式にして `--source` に渡してください |
+| `schema_version=… はこのツールが検証した版と違います` | graphify の版が検証済みのものと違います。`GRAPHIFY_TESTED_REF` のコミットを入れ直すか、`atlas_graph.py` を更新してください |

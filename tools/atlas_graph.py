@@ -26,6 +26,7 @@ import fnmatch
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -35,6 +36,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 GRAPH_SUBDIR = "graphify-out"
+# 検証済みの graphify（sun-flat-yamada/graphify のコミット）と、その graph.json の形式の版。
+# 上流の変更で分母が黙って変わらないよう、CI と手順はこのコミットに固定する（GP-108 ルール5）。
+GRAPHIFY_TESTED_REF = "14f35e381cab8d0ae10824a336114a907c288146"
+SUPPORTED_SCHEMA_VERSIONS = {1}
 GRAPH_FILE = "graph.json"
 BUILD_INFO = "build-info.json"
 INVENTORY_FILE = "inventory.md"
@@ -96,7 +101,16 @@ def load_graph(path: Path) -> Graph:
                 n["source_file"] = normalize_path(n["source_file"])
             nodes[n["id"]] = n
     edges = [e for e in raw_edges if isinstance(e, dict) and "source" in e and "target" in e]
-    return Graph(nodes=nodes, edges=edges, meta=data.get("graph", {}) or {})
+    meta = data.get("graph", {}) or {}
+    version = meta.get("schema_version")
+    if version is not None and version not in SUPPORTED_SCHEMA_VERSIONS:
+        print(
+            f"WARN: graph.json の schema_version={version} は"
+            f"このツールが検証した版（{sorted(SUPPORTED_SCHEMA_VERSIONS)}）と違います。"
+            "結果を鵜呑みにせず、graphify を検証済みの版に戻すか、tools/atlas_graph.py を更新してください",
+            file=sys.stderr,
+        )
+    return Graph(nodes=nodes, edges=edges, meta=meta)
 
 
 def resolve_graph_path(path: Path) -> Path:
@@ -485,27 +499,101 @@ def source_state(source: Path) -> tuple[str, bool | None]:
     return commit, bool(status)
 
 
+def source_fingerprint(source: Path) -> tuple[str, bool | None, tuple]:
+    """解析対象の状態。git なら HEAD と未コミット変更の有無、git でなければ全ファイルの（パス・サイズ・更新時刻）。"""
+    commit, dirty = source_state(source)
+    if dirty is not None:
+        return commit, dirty, ()
+    files = []
+    for rel in list_source_files(source, None):
+        try:
+            st = (source / rel).stat()
+        except OSError:
+            continue
+        files.append((rel, st.st_size, st.st_mtime_ns))
+    return commit, dirty, tuple(files)
+
+
+def split_command(value: str) -> list[str]:
+    """実行コマンドの文字列を分割する。
+
+    実在するファイルのパスはそのまま 1 要素にする（`C:\\Program Files\\…` を空白で壊さない）。
+    """
+    if Path(value).is_file():
+        return [value]
+    return shlex.split(value, posix=os.name != "nt")
+
+
 def find_graphify(explicit: str | None) -> list[str]:
     if explicit:
-        return explicit.split()
+        return split_command(explicit)
     env = os.environ.get("GRAPHIFY_CMD")
     if env:
-        return env.split()
+        return split_command(env)
     exe = shutil.which("graphify")
     if exe:
         return [exe]
     raise InputError(
         "graphify が見つかりません。次のどれかで用意してください:\n"
-        "  uv tool install git+https://github.com/sun-flat-yamada/graphify\n"
-        "  （または GRAPHIFY_CMD / --graphify で実行コマンドを指定）"
+        f"  uv tool install git+https://github.com/sun-flat-yamada/graphify@{GRAPHIFY_TESTED_REF}\n"
+        "  （または環境変数 GRAPHIFY_CMD / --graphify で実行コマンドを指定）"
     )
 
 
+_MSYS_DRIVE = re.compile(r"^/([A-Za-z])(/|$)")
+
+
+def native_path(value: str) -> str:
+    """Git Bash（MSYS）の `/c/Users/...` を Windows の Python が開ける `C:/Users/...` に直す（Windows のときだけ）。"""
+    if os.name == "nt" and value.startswith("/"):
+        # /tmp/... のようなドライブ文字の無い MSYS のパスは、Git Bash の cygpath に変換させる
+        cygpath = shutil.which("cygpath")
+        if cygpath:
+            r = subprocess.run([cygpath, "-m", value], capture_output=True, text=True)
+            if r.returncode == 0 and r.stdout.strip():
+                return r.stdout.strip()
+        m = _MSYS_DRIVE.match(value)
+        if m:
+            return f"{m.group(1).upper()}:/{value[m.end() :]}"
+    return value
+
+
+def read_gate_config(path: Path) -> dict[str, str]:
+    """gate-config.env の KEY=value / KEY='value' を読む（bash の source と同じ値になる範囲だけ）。"""
+    values: dict[str, str] = {}
+    if not path.is_file():
+        return values
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)=(.*)$", line)
+        if not m:
+            continue
+        raw = m.group(2).strip()
+        q = re.match(r"^'([^']*)'|^\"([^\"]*)\"", raw)
+        values[m.group(1)] = (
+            (q.group(1) if q.group(1) is not None else q.group(2)) if q else raw.split("#", 1)[0].strip()
+        )
+    return values
+
+
+def default_spec_paths() -> tuple[Path, Path]:
+    """配置先（spec-extraction/tools/）から見た gate-config.env と既定の出力先。"""
+    wroot = Path(__file__).resolve().parent.parent
+    return wroot / "00-ingestion" / "gate-config.env", wroot / "01-code-graph" / "graphify"
+
+
 def cmd_build(args: argparse.Namespace) -> int:
-    source = Path(args.source).resolve()
+    config_path, default_out = default_spec_paths()
+    config = read_gate_config(Path(args.config) if args.config else config_path)
+    source_arg = args.source or config.get("SOURCE_PATH", "")
+    if not source_arg:
+        raise InputError("解析対象が分かりません。--source を渡すか、gate-config.env の SOURCE_PATH を設定してください")
+    # 除外は gate-config.env の SOURCE_EXCLUDE と同じ値を既定にする（G-GRAPHIFY と数え方をずらさない）
+    if args.exclude is None:
+        args.exclude = config.get("SOURCE_EXCLUDE", "")
+    source = Path(native_path(source_arg)).resolve()
     if not source.is_dir():
         raise InputError(f"解析対象のディレクトリがありません: {source}")
-    out = Path(args.out).resolve()
+    out = Path(native_path(args.out) if args.out else default_out).resolve()
     try:
         out.relative_to(source)
         raise InputError("出力先が解析対象の中にあります。解析対象は変更しません（出力先を外に置いてください）")
@@ -514,7 +602,7 @@ def cmd_build(args: argparse.Namespace) -> int:
     out.mkdir(parents=True, exist_ok=True)
     graphify = find_graphify(args.graphify)
 
-    before = source_state(source)
+    before = source_fingerprint(source)
     extract = [*graphify, "extract", str(source), "--code-only", "--out", str(out)]
     print("$ " + " ".join(extract), flush=True)
     subprocess.run(extract, check=True)
@@ -522,7 +610,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         report = [*graphify, "cluster-only", str(out)]
         print("$ " + " ".join(report), flush=True)
         subprocess.run(report, check=True, cwd=str(out))
-    after = source_state(source)
+    after = source_fingerprint(source)
     if before != after:
         raise InputError("解析の前後で解析対象の状態が変わりました。解析対象を変更しない前提が崩れています")
 
@@ -581,10 +669,13 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="command", required=True)
 
     b = sub.add_parser("build", help="graphify でコードグラフを作る")
-    b.add_argument("--source", required=True, help="解析対象のルート（参照専用）")
-    b.add_argument("--out", required=True, help="出力先（解析対象の外）")
-    b.add_argument("--graphify", help="graphify の実行コマンド（既定: GRAPHIFY_CMD → PATH 上の graphify）")
-    b.add_argument("--exclude", default="", help="除外する相対パスの正規表現（SOURCE_EXCLUDE）")
+    b.add_argument("--source", help="解析対象のルート（参照専用。既定: gate-config.env の SOURCE_PATH）")
+    b.add_argument("--out", help="出力先（解析対象の外。既定: spec-extraction/01-code-graph/graphify）")
+    b.add_argument("--config", help="gate-config.env のパス（既定: spec-extraction/00-ingestion/gate-config.env）")
+    b.add_argument("--graphify", help="graphify の実行コマンド（既定: 環境変数 GRAPHIFY_CMD → PATH 上の graphify）")
+    b.add_argument(
+        "--exclude", default=None, help="除外する相対パスの正規表現（既定: gate-config.env の SOURCE_EXCLUDE）"
+    )
     b.add_argument(
         "--depth", type=int, default=0, help="インベントリでまとめるディレクトリの深さ（0 = ファイルの親ディレクトリ）"
     )
