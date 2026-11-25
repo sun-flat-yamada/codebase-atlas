@@ -158,15 +158,36 @@ class CheckRun:
 
 @dataclass(frozen=True)
 class Readiness:
-    state: str  # ready / pending / blocked
+    state: str  # ready / pending / blocked / behind
     reasons: list[str] = field(default_factory=list)
 
 
 FAILED_CONCLUSIONS = {"failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"}
 
 
-def evaluate_merge_readiness(pr: PullSnapshot, checks: list[CheckRun]) -> Readiness:
-    """A failed check or a conflict blocks; a running check or unknown mergeability waits."""
+def latest_review_states(reviews: list[dict]) -> dict[str, str]:
+    """Each reviewer's latest decisive review (APPROVED / CHANGES_REQUESTED / DISMISSED). Comments do not count."""
+    latest: dict[str, str] = {}
+    for r in reviews:  # the REST API returns reviews in chronological order
+        state = r.get("state", "")
+        user = (r.get("user") or {}).get("login", "")
+        if user and state in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
+            latest[user] = state
+    return latest
+
+
+def evaluate_merge_readiness(
+    pr: PullSnapshot,
+    checks: list[CheckRun],
+    review_states: dict[str, str] | None = None,
+    unresolved_threads: int | None = None,
+) -> Readiness:
+    """Decide whether the PR may be merged now.
+
+    blocked: closed/merged, a failed check, a conflict, a reviewer requesting changes, an unresolved review thread
+    behind:  the base branch moved on (branch protection requires an up-to-date branch) -> update the branch first
+    pending: no check run reported yet, a check still running, or mergeability still being computed
+    """
     if pr.merged:
         return Readiness("blocked", ["already merged"])
     if pr.state != "open":
@@ -176,7 +197,16 @@ def evaluate_merge_readiness(pr: PullSnapshot, checks: list[CheckRun]) -> Readin
         return Readiness("blocked", [f"check failed: {c.name} ({c.conclusion})" for c in failed])
     if pr.mergeable_state == "dirty":
         return Readiness("blocked", ["merge conflict with the base branch"])
-    reasons = [f"check running: {c.name}" for c in checks if c.status != "completed"]
+    requesting = sorted(u for u, s in (review_states or {}).items() if s == "CHANGES_REQUESTED")
+    if requesting:
+        return Readiness("blocked", [f"changes requested by {', '.join(requesting)}"])
+    if unresolved_threads:
+        return Readiness("blocked", [f"{unresolved_threads} unresolved review thread(s)"])
+    if pr.mergeable_state == "behind":
+        return Readiness("behind", ["the head branch is behind the base branch"])
+    # No check run at all right after a push means CI has not started yet, not that CI passed.
+    reasons = [] if checks else ["no check run reported for this head yet"]
+    reasons += [f"check running: {c.name}" for c in checks if c.status != "completed"]
     if pr.mergeable_state == "unknown":
         reasons.append("mergeability is being computed")
     return Readiness("pending", reasons) if reasons else Readiness("ready", [])
@@ -316,6 +346,38 @@ def read_check_runs(repo: str, sha: str) -> list[CheckRun]:
     return [CheckRun(c["name"], c["status"], c.get("conclusion")) for c in r.get("check_runs", [])]
 
 
+def read_review_states(repo: str, pr: int) -> dict[str, str]:
+    reviews = gh_api("GET", f"repos/{repo}/pulls/{pr}/reviews?per_page=100")
+    return latest_review_states(reviews if isinstance(reviews, list) else [])
+
+
+THREADS_QUERY = """
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) { reviewThreads(first: 100) { nodes { isResolved } } }
+  }
+}
+"""
+
+
+def count_unresolved_threads(repo: str, pr: int, cloud: bool) -> int | None:
+    """Unresolved review threads via GraphQL. None when it cannot be checked (the cloud proxy rejects GraphQL)."""
+    if cloud:
+        return None
+    owner, name = repo.split("/", 1)
+    out = gh(
+        ["api", "graphql", "-f", f"query={THREADS_QUERY}", "-F", f"owner={owner}", "-F", f"name={name}",
+         "-F", f"number={pr}"]
+    )  # fmt: skip
+    nodes = json.loads(out)["data"]["repository"]["pullRequest"]["reviewThreads"]["nodes"]
+    return sum(1 for n in nodes if not n.get("isResolved"))
+
+
+def update_branch(repo: str, pr: int, head_sha: str) -> None:
+    """Bring the head branch up to date with the base (a merge of the base into the head; CI runs again)."""
+    gh_api("PUT", f"repos/{repo}/pulls/{pr}/update-branch", {"expected_head_sha": head_sha})
+
+
 def required_approvals(repo: str, branch: str) -> int:
     try:
         p = gh_api("GET", f"repos/{repo}/branches/{branch}/protection")
@@ -397,10 +459,26 @@ def cmd_finish(args: argparse.Namespace, sleep: Callable[[float], None] = time.s
         if not args.dry_run:
             mark_ready(repo, pr, policy.cloud)
 
+    threads_checked = not policy.cloud
+    if not threads_checked:
+        print("ℹ️  cloud session: review threads cannot be read (GraphQL is rejected); resolve them before finishing.")
+
     deadline = time.monotonic() + args.timeout
     while True:
         pull = read_pull(repo, pr)
-        readiness = evaluate_merge_readiness(pull, read_check_runs(repo, pull.head_sha))
+        readiness = evaluate_merge_readiness(
+            pull,
+            read_check_runs(repo, pull.head_sha),
+            read_review_states(repo, pr),
+            count_unresolved_threads(repo, pr, policy.cloud),
+        )
+        if readiness.state == "behind":
+            if args.dry_run:
+                print(f"(dry-run) would update the branch of PR #{pr} with {pull.base_ref}")
+                return 2
+            print(f"🔄 PR #{pr} is behind {pull.base_ref} -> updating the branch (CI runs again)", flush=True)
+            update_branch(repo, pr, pull.head_sha)
+            readiness = Readiness("pending", ["branch updated; waiting for CI on the new head"])
         if readiness.state != "pending" or not args.wait or time.monotonic() > deadline:
             break
         print(f"⏳ waiting: {'; '.join(readiness.reasons)}", flush=True)

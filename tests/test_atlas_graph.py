@@ -9,6 +9,8 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -290,6 +292,77 @@ class StaleTest(unittest.TestCase):
         if commit == "not-a-git-repository":
             self.assertEqual(rc, 1)
             self.assertIn("STALE", out)
+
+
+class BuildDefaultsTest(unittest.TestCase):
+    def test_read_gate_config(self):
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "gate-config.env"
+            p.write_text(
+                "# comment\nPURPOSE=rebuild  # note\nSOURCE_PATH='/work/legacy app'\n"
+                "SOURCE_EXCLUDE='(^|/)target/'\nexport CODE_GRAPH_TOOL=graphify\n",
+                encoding="utf-8",
+            )
+            cfg = atlas_graph.read_gate_config(p)
+        self.assertEqual(cfg["PURPOSE"], "rebuild")
+        self.assertEqual(cfg["SOURCE_PATH"], "/work/legacy app")
+        self.assertEqual(cfg["SOURCE_EXCLUDE"], "(^|/)target/")
+        self.assertEqual(cfg["CODE_GRAPH_TOOL"], "graphify")
+        self.assertEqual(atlas_graph.read_gate_config(Path(t) / "missing.env"), {})
+
+    def test_native_path(self):
+        if os.name == "nt":
+            self.assertEqual(atlas_graph.native_path("/c/Users/me/src").lower(), "c:/users/me/src")
+            if shutil.which("cygpath"):  # Git Bash: ドライブ文字の無い MSYS のパスも Windows 形式になる
+                self.assertFalse(atlas_graph.native_path("/tmp/x").startswith("/"))
+        else:
+            self.assertEqual(atlas_graph.native_path("/c/Users/me/src"), "/c/Users/me/src")
+            self.assertEqual(atlas_graph.native_path("/tmp/x"), "/tmp/x")
+        self.assertEqual(atlas_graph.native_path("relative/dir"), "relative/dir")
+
+    def test_split_command_keeps_existing_path_with_spaces(self):
+        with tempfile.TemporaryDirectory() as t:
+            exe = Path(t) / "Program Files" / "graphify.exe"
+            exe.parent.mkdir()
+            exe.write_text("", encoding="utf-8")
+            self.assertEqual(atlas_graph.split_command(str(exe)), [str(exe)])
+        self.assertEqual(atlas_graph.split_command("uvx graphify"), ["uvx", "graphify"])
+
+    def test_missing_source_without_config(self):
+        with tempfile.TemporaryDirectory() as t:
+            rc, _, err = run("build", "--config", str(Path(t) / "none.env"), "--graphify", "graphify")
+        self.assertEqual(rc, 2)
+        self.assertIn("SOURCE_PATH", err)
+
+    def test_fingerprint_detects_change_outside_git(self):
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            (root / "A.java").write_text("class A {}", encoding="utf-8")
+            if atlas_graph._git(root, "rev-parse", "HEAD") is not None:
+                self.skipTest("temporary directory is inside a git work tree")
+            before = atlas_graph.source_fingerprint(root)
+            (root / "graphify-out").mkdir()
+            (root / "graphify-out" / "graph.json").write_text("{}", encoding="utf-8")
+            self.assertNotEqual(before, atlas_graph.source_fingerprint(root))
+
+
+class SchemaVersionTest(unittest.TestCase):
+    def test_unknown_schema_version_warns(self):
+        data = json.loads(GRAPH.read_text(encoding="utf-8"))
+        data["graph"]["schema_version"] = 99
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "graph.json"
+            p.write_text(json.dumps(data), encoding="utf-8")
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                atlas_graph.load_graph(p)
+        self.assertIn("schema_version=99", err.getvalue())
+
+    def test_fixture_schema_is_supported(self):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            atlas_graph.load_graph(GRAPH)
+        self.assertEqual(err.getvalue(), "")
 
 
 class BuildGuardTest(unittest.TestCase):

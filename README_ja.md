@@ -80,7 +80,7 @@ graphify（tree-sitter の AST でソースを解析するローカルの道具�
 - **AI ツール**（下の「対応している AI ツール」）
 - **解析したいソースコード**
 - **Python 3.10 以上**（graphify との突き合わせに使います）と、グラフを作る **[graphify](https://github.com/sun-flat-yamada/graphify)**（Python 3.11.5 以上）:
-  `uv tool install git+https://github.com/sun-flat-yamada/graphify`（または `pipx install git+https://github.com/sun-flat-yamada/graphify`）。
+  `uv tool install git+https://github.com/sun-flat-yamada/graphify@14f35e381cab8d0ae10824a336114a907c288146`（または `pipx install git+https://github.com/sun-flat-yamada/graphify@14f35e381cab8d0ae10824a336114a907c288146`。CI で検証しているコミットで、`tools/atlas_graph.py` の `GRAPHIFY_TESTED_REF` と同じです）。
   用意できない環境では、`init.sh` に `--code-graph-tool none` を指定してください。
 
 データベースや専用の基盤は要りません。graphify は `graph.json` というファイルを 1 つ書くだけで、常駐するサービスはありません。
@@ -100,8 +100,9 @@ git clone https://github.com/sun-flat-yamada/codebase-atlas.git
 ./codebase-atlas/init.sh ./legacy-order-system order-system rebuild --playbook java-jaxrs-jpa
 
 # 3. graphify でコードグラフを作り、仕様書用のリポジトリに置く（Phase 1 の前。AI エージェントに実行させても構いません）
+#    解析対象と除外は spec-extraction/00-ingestion/gate-config.env から読みます
 cd legacy-order-system-spec
-python3 spec-extraction/tools/atlas_graph.py build --source ../legacy-order-system --out spec-extraction/01-code-graph/graphify
+python3 spec-extraction/tools/atlas_graph.py build
 ```
 
 隣に `legacy-order-system-spec/`（仕様書用のリポジトリ）ができます。

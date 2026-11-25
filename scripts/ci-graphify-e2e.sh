@@ -25,8 +25,8 @@ cp -R "$ROOT/tests/fixtures/sample-java" "$WORK/shop"
 SPEC="$WORK/shop-spec"
 cd "$SPEC"
 
-"$PY" spec-extraction/tools/atlas_graph.py build \
-  --source "$WORK/shop" --out spec-extraction/01-code-graph/graphify
+# 引数なし: 解析対象と出力先は gate-config.env と既定値から決まる（README の手順と同じ形で通す）
+"$PY" spec-extraction/tools/atlas_graph.py build
 test -f spec-extraction/01-code-graph/graphify/graphify-out/graph.json
 test -f spec-extraction/01-code-graph/graphify/graphify-out/GRAPH_REPORT.md
 grep -q 'ソースファイル: \*\*3\*\*' spec-extraction/01-code-graph/graphify/inventory.md

@@ -202,10 +202,11 @@ Phase 4: 監査 (audit)                          → 03-audit/traceability.md
   graphify（tree-sitter AST による決定的な解析。LLM を使わない）で解析する:
 
   ```bash
-  python3 spec-extraction/tools/atlas_graph.py build --source "<SOURCE_PATH>" --out spec-extraction/01-code-graph/graphify
+  python3 spec-extraction/tools/atlas_graph.py build   # 解析対象と除外は gate-config.env の SOURCE_PATH / SOURCE_EXCLUDE
   ```
 
-  （graphify が未導入なら `uv tool install git+https://github.com/sun-flat-yamada/graphify` で入れる。
+  （graphify が未導入なら `uv tool install git+https://github.com/sun-flat-yamada/graphify@<コミット>` で入れる。
+  コミットは `spec-extraction/tools/atlas_graph.py` の `GRAPHIFY_TESTED_REF`（検証済みの版。別の版では分母が変わりうる）。
   断面（scope.md のコミット）を checkout した状態で実行する。出力先は解析対象の**外**に置く——ツールが中を拒否する。）
 - できた `01-code-graph/graphify/inventory.md`（ディレクトリ別の件数・ディレクトリ間の依存・結合の多いシンボル・
   ソースファイル一覧）を **2 つ目の数え方**として使う。**ノードの正本は `code-graph.md` のまま**であり、

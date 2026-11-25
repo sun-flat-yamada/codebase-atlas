@@ -583,7 +583,9 @@ if [ -n "$(git -C "$SCRIPT_DIR" status --porcelain 2>/dev/null)" ]; then
 fi
 cat > "$WROOT/docs/knowledge/FRAMEWORK-VERSION" << EOF
 # 生成元フレームワークの版（知見還元時の基準。手書きで編集しない）
-framework=reverse-spec-flow
+framework=codebase-atlas
+# 基にしたフレームワーク（知見の還元で、上流に返すべきものかを判断するため）
+based_on=reverse-spec-flow 2.2.1
 framework_commit=${_FW_COMMIT}${_FW_DIRTY}
 generated_at=$(date '+%Y-%m-%d %H:%M %Z')
 spec_name=${SPEC_NAME}
@@ -1355,7 +1357,7 @@ echo "  1. spec-extraction/AGENTS.md の <PLACEHOLDER> を埋める  ← まず�
 echo "  2. Phase 0（取り込み・スコープ確定）から開始する"
 if [ "$CODE_GRAPH_TOOL" = "graphify" ]; then
   echo "  ※ Phase 1 の前に graphify でコードグラフを作る（GP-108。G-GRAPHIFY が突き合わせる）:"
-  echo "     python3 spec-extraction/tools/atlas_graph.py build --source \"${SRC}\" --out spec-extraction/01-code-graph/graphify"
+  echo "     python3 spec-extraction/tools/atlas_graph.py build   （解析対象と除外は gate-config.env から読む）"
 fi
 echo ""
 echo "次セッションでの AI エージェントへの最初の指示（例）:"
